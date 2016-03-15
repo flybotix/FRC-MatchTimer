@@ -20,18 +20,17 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 public class MatchTimerFX extends Application {
-	private interface IAction {
-		public void action();
-	}
 	
 	private static final double sGAUGE_WIDTH = 500d,
 		sGAUGE_HEIGHT = 500d;
+  private static double sTELEOP_DURATION = 135d;
 	
-	private static final double sTIMER_UPDATE_RATE_HZ = 1d;
+	private static final double sTIMER_UPDATE_RATE_HZ = 2d;
 	private static final long sTOUCH_DEBOUNCE = 50;
 	private long mLastTouchTime = 0;
-	
-	private final IAction[] sSTATES = {
+
+  private interface ITimerAction {public void action();}
+	private final ITimerAction[] sSTATES = {
 		()->startTimer(),
 		()->stopTimer(),
 		()->resetTimer()
@@ -39,10 +38,6 @@ public class MatchTimerFX extends Application {
 
 	private int mCurrentState = 0;
 	private AtomicBoolean mIsUpdatingState = new AtomicBoolean(false);
-	
-	private static double sTELEOP_DURATION = 135d;
-	
-	private final Timer mTimer = new Timer("Gauge Timer");
 	
 	private Gauge mGauge;
 	
@@ -59,7 +54,13 @@ public class MatchTimerFX extends Application {
 		}
 	};
 	private TimerTask mTimerTask = null;
+  private final Timer mTimer = new Timer("Gauge Timer");
 	
+  /* ================================
+   * Methods
+   * ================================
+   */
+  
 	@Override
 	public void start(Stage primaryStage) {
 		mGauge = GaugeBuilder.create()
@@ -104,6 +105,10 @@ public class MatchTimerFX extends Application {
 		resetTimer();
 	}
 	
+	/**
+	 * Processes an input event, whether it's click,
+	 * touch or key
+	 */
 	private void processGaugeClick()
 	{
 		long time = System.currentTimeMillis();
@@ -120,6 +125,10 @@ public class MatchTimerFX extends Application {
 		mLastTouchTime = time;
 	}
 	
+	/**
+	 * Resets the timer to its initial state, which
+	 * is effectively "waiting for match to start"
+	 */
 	private void resetTimer()
 	{
 		mStartTime = 0;
@@ -129,17 +138,24 @@ public class MatchTimerFX extends Application {
 		mGauge.setNeedleBorderColor(Color.BLACK);
 	}
 	
+	/**
+	 * Starts the match timer and the gauge animation
+	 */
 	private void startTimer()
 	{
 		mIsUpdatingState.set(true);
 		mStartTime = System.currentTimeMillis();
 		mLastTime = mStartTime;
-		mTimerTask = new MyTimerTask();
 		mGauge.setNeedleBorderColor(Color.PURPLE);
+    mTimerTask = new MyTimerTask();
 		mTimer.scheduleAtFixedRate(mTimerTask, (long)(1000d/sTIMER_UPDATE_RATE_HZ), (long)(1000d/sTIMER_UPDATE_RATE_HZ));
 		System.out.println("STARTED");
 	}
 	
+	/**
+	 * Stops the timer by cancelling the timer task and
+	 * setting the colors of the gauge
+	 */
 	private void stopTimer()
 	{
 		mIsUpdatingState.set(false);
